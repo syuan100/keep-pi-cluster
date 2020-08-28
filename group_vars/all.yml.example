@@ -35,4 +35,4 @@ keep_random_beacon_tag: syuan100/go-ethereum:v1.9.19_arm64
 
 # External endpoint: References geth instance in another service (such as Prysm or Infura). Uncomment the lines below to enable.
 external_eth1: true
-eth1_endpoint: https://goerli.infura.io/v3/f96a3f23fd3843aab14a9b48e0964008
+eth1_endpoint: https://ropsten.infura.io/v3/129d479c71bb4f068db316f322edbbbf
