@@ -1,0 +1,19 @@
+- name: Install MetalLB from kubectl
+  shell: kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/namespace.yaml && \
+          kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.9.3/manifests/metallb.yaml && \
+          kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+  register: result
+  failed_when: result.rc != 0 and 'AlreadyExists' not in result.stderr
+
+- name: Copy MetalLB config to server
+  template:
+    src: ../../../../manifests/metallb-config.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/metallb-config.yaml
+    owner: root
+    group: root
+    mode: preserve
+  register: result
+
+- name: Restart if config changed
+  shell: kubectl apply -f /var/lib/rancher/k3s/server/manifests/metallb-config.yaml
+  when: result.changed == true

@@ -1,0 +1,40 @@
+---
+# Pre-requisites  for deploying HCI
+# Some of the prerequisite checks like FQDN, disk size of var, logical block
+# size of 512B are moved to pre_tasks of:
+# gluster-ansible/playbooks/hc-ansible-deployment/tasks/gluster_deployment.yml
+
+# Install the necessary packages for deploying HCI
+- name: Check if packages are installed, if not install
+  package:
+      name: "{{ item }}"
+      state: present
+  with_items: "{{ gluster_features_hci_packages }}"
+  when: gluster_features_hci_packages is defined
+
+# Enable and start services
+- name: Enable and start glusterd and chronyd
+  service:
+     name: "{{ item }}"
+     state: started
+     enabled: yes
+  with_items:
+     - chronyd
+     - glusterd
+     - firewalld
+
+# Add user qemu to group gluster
+- name: Add user qemu to gluster group
+  user:
+    name: qemu
+    groups: gluster
+    append: yes
+
+# Disable all the hook scripts
+# Ignore errors, since some files might not be present.
+- name: Disable the hook scripts
+  command: rename S D "{{ item }}"
+  with_items: "{{ gluster_features_hci_hookscripts }}"
+  when: gluster_features_hci_hookscripts is defined
+  failed_when: false
+

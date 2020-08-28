@@ -1,0 +1,139 @@
+---
+
+# https://access.redhat.com/documentation/en-us/red_hat_gluster_storage/3.3/html/administration_guide/brick_configuration
+# https://access.redhat.com/documentation/en-US/Red_Hat_Storage/2.1/html/Administration_Guide/chap-Administration_Guide-Performance_Enhancements.html
+# https://github.com/solarkennedy/wiki.xkyle.com/wiki/XFS_Block_Sizes
+# https://ewen.mcneill.gen.nz/blog/entry/2019-01-08-xfs-storage-layout-considerations/
+# https://raid.wiki.kernel.org/index.php/RAID_setup#XFS
+# https://wiki.gentoo.org/wiki/LVM/en
+# https://serverfault.com/questions/981694/why-does-xfs-uses-lvm-cache-chunk-size-instead-the-raid5-setup-for-sunit-swidth
+
+# Blacklist multipath devices
+- name: Blacklist multipath devices
+  import_tasks: blacklist_mpath_devices.yml
+  when: blacklist_mpath_devices is defined
+  tags:
+    - blacklistdevices
+
+# Gather facts to determine the distribution
+- name: Gather facts to determine the OS distribution
+  setup:
+    gather_subset:
+      - '!all'
+      - '!any'
+      - distribution
+
+# Create a logical volume thinpool when thinpoolname is given
+- name: Change to Install lvm tools for debian systems.
+  package:
+    name: thin-provisioning-tools
+    state: present
+  register: apt_status
+  when: ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"
+  until: apt_status is success
+  retries: 100
+  delay: 10
+
+- name: Change to Install lvm tools for RHEL systems.
+  package:
+    name: device-mapper-persistent-data
+    state: present
+  when: ansible_os_family == 'RedHat'
+  retries: 10
+  delay: 5
+
+- name: Install python-yaml package for Debian systems
+  package:
+    name: python-yaml
+    state: present
+  when: ansible_distribution == "Debian" or ansible_distribution == "Ubuntu"
+  retries: 10
+  delay: 5
+
+# Initialize vdo_devs to empty list, vdo_devs would not not be initialized if
+# search fails
+- name: Initialize vdo_devs array
+  set_fact:
+     vdo_devs: []
+
+# Get the list of volume groups created on vdo disks
+# This is a bit hacky, we rely on pvname to get vdo disks
+# TODO: dynamically add VG's here
+- name: Record VDO devices (if any)
+  set_fact:
+     vdo_devs: "{{ vdo_devs|default([]) + [ item.vgname ] }}"
+  with_items: "{{ gluster_infra_volume_groups | default([]) }}"
+  when: item.pvname is defined and item.pvname is search("/dev/mapper/vdo")
+
+# set lvm config
+- name: Configure LVM
+  import_tasks: lvm_config.yml
+  when: gluster_infra_lvm is defined
+  tags:
+    - lvmconfig
+
+
+#phase #1
+- name: Create a vdo disk
+  import_tasks: vdo_create.yml
+  when: gluster_infra_vdo is defined
+  tags:
+    - vdocreate
+
+- name: "Execute phase #1 of LVM"
+  import_tasks: main-lvm.yml
+
+#phase #2
+- name: "Create a vdo disk after LVM for phase #2"
+  import_tasks: vdo_create.yml
+  when: gluster_infra_vdo is defined and gluster_phase2_has_missing_devices is defined and gluster_phase2_has_missing_devices
+  tags:
+    - vdocreate
+
+- name: "Execute phase #2 of LVM"
+  import_tasks: main-lvm.yml
+  when: gluster_phase2_has_missing_devices is defined and gluster_phase2_has_missing_devices
+
+
+# Create a filesystem on the disks.
+- name: Create a filesystem on the disks
+  import_tasks: fscreate.yml
+  when: gluster_infra_lv_logicalvols is defined or
+        gluster_infra_thick_lvs is defined
+  tags:
+    - fscreate
+
+# Mount the devices
+- name: Mount the devices
+  import_tasks: mount.yml
+  when: gluster_infra_mount_devices is defined and gluster_infra_mount_devices is not none
+  tags:
+    - mount
+
+# set kernel boot params for lvm volumes
+- name: Configure lvm kernel parameters
+  import_tasks: lvm_kernelparams.yml
+  when: gluster_infra_thick_lvs is defined and gluster_infra_thick_lvs | selectattr("atboot","defined")| selectattr("atboot") | list | length > 0
+  tags:
+    - lvmkernelparams
+
+# set fstrim service
+- name: Configure fstrim service
+  import_tasks: fstrim_service.yml
+  when: fstrim_service is defined
+  tags:
+    - fstrim
+
+# Encrypt devices with LUKS
+- name: Encrypt devices with LUKS
+  import_tasks: luks_device_encrypt.yml
+  when: gluster_infra_luks_devices is defined
+  tags:
+    - luksencrypt
+
+# Bind Tang server
+- name: Bind Tand server
+  import_tasks: bind_tang_server.yml
+  when: gluster_infra_tangservers is defined
+  tags:
+    - bindtang

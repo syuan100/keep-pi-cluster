@@ -1,0 +1,17 @@
+{
+  "he_appliance_password": "encrypt-password-using-ansible-vault",
+  "he_admin_password": "UI-password-for-login",
+  "he_domain_type": "glusterfs",
+  "he_fqdn": "FQDN-for-Hosted-Engine",
+  "he_vm_mac_addr": "Valid MAC address",
+  "he_default_gateway": "Valid Gateway",
+  "he_mgmt_network": "ovirtmgmt",
+  "he_storage_domain_name": "HostedEngine",
+  "he_storage_domain_path": "/engine",
+  "he_storage_domain_addr": "host1-backend-network-FQDN",
+  "he_mount_options": "backup-volfile-servers=host2-backend-network-FQDN:host3-backend-network-FQDN",
+  "he_bridge_if": "interface name for bridge creation",
+  "he_enable_hc_gluster_service": true,
+  "he_mem_size_MB": "16384",
+  "he_cluster": "Default"
+}

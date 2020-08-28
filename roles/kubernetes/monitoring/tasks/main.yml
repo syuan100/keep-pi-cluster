@@ -1,0 +1,30 @@
+- name: Clear monitoring repo if it exists
+  file:
+    path: /home/ubuntu/cluster-monitoring
+    state: absent
+
+- name: Get monitoring repo
+  git:
+    repo: https://github.com/carlosedp/cluster-monitoring
+    dest: /home/ubuntu/cluster-monitoring
+
+- name: Copy new vars.jsonnet file for k3s over
+  template:
+    src: ../../../manifests/vars.jsonnet.j2
+    dest: /home/ubuntu/cluster-monitoring/vars.jsonnet
+
+- name: Make cluster-monitoring vendors
+  make:
+    chdir: /home/ubuntu/cluster-monitoring
+    target: vendor
+
+- name: Make cluster-monitoring
+  make:
+    chdir: /home/ubuntu/cluster-monitoring
+
+- name: Make cluster-monitoring deploy
+  make:
+    chdir: /home/ubuntu/cluster-monitoring
+    target: deploy
+  retries: 5
+  delay: 10

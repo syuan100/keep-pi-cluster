@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nimbus
+spec:
+  type: LoadBalancer
+  selector:
+    app: nimbus
+  ports:
+  - name: nimbus-api
+    port: {{ nimbus_api_port }}
+    targetPort: {{ nimbus_api_target_port }}
+    nodePort: 30041
+  - name: nimbus-p2p
+    port: {{ nimbus_port }}
+    targetPort: {{ nimbus_target_port }}
+    nodePort: 30042
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nimbus-udp
+spec:
+  type: LoadBalancer
+  selector:
+    app: nimbus
+  ports:
+  - name: nimbus-p2p-udp
+    port: {{ nimbus_port }}
+    targetPort: {{ nimbus_target_port }}
+    protocol: UDP
+    nodePort: 30043
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nimbus
+  labels:
+    app: nimbus
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nimbus
+  template:
+    metadata:
+      labels:
+        app: nimbus
+    spec:
+      volumes:
+        - name: eth2pv
+          persistentVolumeClaim:
+            claimName: eth2claim
+      containers:
+        - name: nimbus
+          image: {{ nimbus_image_tag }}
+          imagePullPolicy: "Always"
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+          ports:
+            - containerPort: {{ nimbus_api_port }}
+            - containerPort: {{ nimbus_port }}
+            - containerPort: {{ nimbus_port }}
+              protocol: UDP
+          command: ["bash", "-c", "yes '{{ nimbus_keystore_password }}' | /usr/bin/beacon_node deposits import --data-dir=/build/data/shared_medalla_0 /build/data/shared_medalla_0/validator_keys && /usr/bin/beacon_node --network=medalla --data-dir=/build/data/shared_medalla_0 --web3-url='{{ eth1_endpoint }}' --tcp-port={{ nimbus_port }} --udp-port={{ nimbus_port }} --rpc --rpc-port={{ nimbus_api_port }}{% if poap_nimbus is defined %} --graffiti={{ poap_nimbus }}{% endif %}"]
+          volumeMounts:
+            - mountPath: "/build/data"
+              name: eth2pv

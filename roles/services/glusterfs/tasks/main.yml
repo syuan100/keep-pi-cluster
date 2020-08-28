@@ -1,0 +1,12 @@
+- name: Copy gluster PV config file
+  template:
+    src: ../../../../manifests/gluster-persistent-volume.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/gluster-persistent-volume.yaml
+    owner: root
+    group: root
+    mode: preserve
+  register: result
+
+- name: Restart if config changed
+  shell: kubectl apply -f /var/lib/rancher/k3s/server/manifests/gluster-persistent-volume.yaml
+  when: result.changed == true

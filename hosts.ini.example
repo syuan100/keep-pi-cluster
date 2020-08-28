@@ -1,0 +1,20 @@
+[master]
+; Put the IP address for your main Kubernetes server
+xxx.xxx.xxx.xxx
+
+[nodes]
+; Put the IP addresses for the rest of the nodes
+xxx.xxx.xxx.xxx
+xxx.xxx.xxx.xxx
+xxx.xxx.xxx.xxx
+
+[k3s_cluster:children]
+; Defines a group called k3s_cluster that includes groups "master" and "nodes"
+master
+nodes
+
+[gluster_servers:children]
+; Defines a group called gluster_servers that includes groups "master" and "nodes"
+; These are the nodes used for replicated storage
+master
+nodes

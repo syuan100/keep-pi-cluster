@@ -1,0 +1,10 @@
+- name: Redeploy validator services with keys
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  roles:
+    - { role: services/lighthouse-validator, when: deploy_lighthouse_validator == true }
+    - { role: services/teku, when: deploy_teku_beacon_w_validator == true }
+  tasks:
+    - name: Redeploy services
+      shell: kubectl rollout restart deployments

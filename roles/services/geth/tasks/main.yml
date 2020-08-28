@@ -1,0 +1,12 @@
+- name: Copy geth service config file
+  template:
+    src: ../../../../manifests/geth-service.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/geth-service.yaml
+    owner: root
+    group: root
+    mode: preserve
+  register: result
+
+- name: Apply new service config if changed
+  shell: kubectl apply -f /var/lib/rancher/k3s/server/manifests/geth-service.yaml
+  when: result.changed == true

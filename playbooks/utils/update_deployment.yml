@@ -1,0 +1,8 @@
+- name: Delete services
+  hosts: master
+  become: yes
+  roles:
+    - role: services/remove-services
+
+- name: Redeploy services
+  import_playbook: ../4_services_playbook.yml

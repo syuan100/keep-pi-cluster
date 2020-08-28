@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: geth
+spec:
+  type: LoadBalancer
+  selector:
+    app: geth
+  ports:
+  - name: geth-json-rpc-tcp
+    port: {{ geth_json_rpc_port }}
+    targetPort: {{ geth_json_rpc_port_target }}
+    nodePort: 30011
+  - name: geth-tcp
+    port: {{ geth_port }}
+    targetPort: {{ geth_port_target }}
+    nodePort: 30012
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: geth-udp
+spec:
+  type: LoadBalancer
+  selector:
+    app: geth
+  ports:
+  - name: geth-udp
+    protocol: UDP
+    port: {{ geth_port }}
+    targetPort: {{ geth_port_target }}
+    nodePort: 30013
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: geth
+  labels:
+    app: geth
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: geth
+  template:
+    metadata:
+      labels:
+        app: geth
+    spec:
+      volumes:
+        - name: eth2pv
+          persistentVolumeClaim:
+            claimName: eth2claim
+      containers:
+        - name: geth
+          image: {{ geth_image_tag }}
+          imagePullPolicy: "Always"
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+          ports:
+            - containerPort: {{ geth_json_rpc_port }}
+            - containerPort: {{ geth_port }}
+            - containerPort: {{ geth_port }}
+              protocol: UDP            
+          command: ["geth"]
+          args: ["--goerli", "--http", "--http.addr", "0.0.0.0", "--http.vhosts=*", "--cache", "512"]
+          volumeMounts:
+            - mountPath: "/root"
+              name: eth2pv

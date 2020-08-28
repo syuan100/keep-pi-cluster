@@ -1,0 +1,19 @@
+---
+- name: Setup gluster hyperconverged interface
+  hosts: hc-nodes
+  remote_user: root
+  gather_facts: no
+
+  vars:
+    gluster_features_hci_cluster: "{{ groups['hc-nodes'] }}"
+    gluster_features_hci_volumes:
+       - { volname: 'engine', brick: '/bricks/engine' }
+       - { volname: 'data', brick: '/bricks/data' }
+       - { volname: 'vmstore', brick: '/bricks/vmstore' }
+    gluster_features_hci_master: "{{ groups['hc-nodes'][0] }}"
+    # Default is 24007 try not to change unless you are sure.
+    gluster_features_hci_port: "24007"
+
+  # This playbook assumes that backend is already setup and mounted on /bricks
+  roles:
+     - gluster.features

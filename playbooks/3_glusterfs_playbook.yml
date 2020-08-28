@@ -1,0 +1,97 @@
+- name: Prep storage for glusterfs...
+  hosts: gluster_servers
+  become: yes
+  any_errors_fatal: true
+  tasks:
+    - name: Try formatting
+      block:
+        - name: Format storage
+          filesystem:
+            fstype: xfs
+            force: yes
+            dev: '{{ storage_path }}'
+      rescue:
+        - name: Remove volume from system manually
+          shell: lvremove -y vg_eth && vgremove vg_eth
+        - name: Format storage
+          filesystem:
+            fstype: xfs
+            force: yes
+            dev: '{{ storage_path }}'
+
+- name: Setting up glusterfs bricks...
+  any_errors_fatal: true
+  become: yes
+  hosts: gluster_servers
+  gather_facts: false
+  vars:
+    # Set a disk type, Options: JBOD, RAID6, RAID10
+    gluster_infra_disktype: JBOD
+
+    # Stripe unit size always in KiB
+    gluster_infra_stripe_unit_size: 128
+
+    # enable lvm auto-extend feature so that when the pool is at 70% it will be extended with 15%
+    gluster_infra_lvm: {
+    autoexpand_threshold: 70,
+    autoexpand_percentage: 15,
+    }
+  
+    # enable fstrim service so the TRIM command is executed once in a while to clean either ssd or thin/vdo volumes
+    fstrim_service: {
+      enabled: yes,
+      schedule: {         
+        hour: "{{ range(1, 4) | random() }}"
+      }
+    }
+
+    # Variables for creating volume group
+    gluster_infra_volume_groups:
+      - { vgname: 'vg_eth', pvname: '{{ storage_path }}' }
+
+    # Create thinpools
+    gluster_infra_thinpools:
+      - {vgname: 'vg_eth', thinpoolname: 'eth2_thinpool', thinpoolsize: '{{ storage_size }}G', poolmetadatasize: '100M'}
+
+    # Create a thin volume
+    gluster_infra_lv_logicalvols:
+      - { vgname: 'vg_eth', thinpool: 'eth2_thinpool', lvname: 'vg_eth_thin_eth2', lvsize: '{{ storage_size * ( groups["all"] | length ) }}G'}
+
+    # Mount the devices 
+    gluster_infra_mount_devices:
+      - { path: '/mnt/brick1', vgname: 'vg_eth', lvname: 'vg_eth_thin_eth2' }
+
+  roles:
+    - '../gluster_infra/roles/backend_setup'
+
+- name: Create glusterfs cluster...
+  any_errors_fatal: true
+  hosts: gluster_servers
+  become: yes
+  gather_facts: true
+
+  vars:
+    # gluster volume
+    gluster_cluster_hosts: "{{ groups['gluster_servers'] }}"
+    gluster_cluster_volume: eth2vol
+    gluster_cluster_transport: 'tcp'
+    gluster_cluster_bricks: '/mnt/brick1'
+
+    # match number of replicas to total number of gluster_servers
+    gluster_cluster_replica_count: '{{ groups["gluster_servers"] | length }}'
+
+    # variables to set specific volume options
+    gluster_cluster_options: {'performance.cache-size':'64MB'}
+  roles:
+    - '../gluster_cluster/roles/gluster_volume'
+  tasks:
+    - name: Ensure GlusterFS server is installed on all hosts
+      apt:
+        name: glusterfs-server
+    - name: Mount gluster volume locally for all hosts
+      mount:
+        path: /mnt/eth2
+        src: localhost:/eth2vol
+        fstype: glusterfs
+        opts: defaults,_netdev
+        state: mounted

@@ -1,0 +1,50 @@
+---
+- name: Install glusterd
+  apt:
+    name: glusterfs-server
+    update_cache: yes
+- name: Start glusterd on the nodes if not already started
+  service:
+       state: started
+       name: glusterd
+       enabled: yes
+  delegate_to: "{{ item }}"
+  run_once: true
+  with_items: "{{ gluster_cluster_hosts }}"
+
+# - name: Try to create a volume
+# block:
+- name: Create a volume
+  gluster_volume:
+    state: "{{ gluster_cluster_state | default('present') }}"
+    volume: "{{ gluster_cluster_volume }}"
+    bricks: "{{ gluster_cluster_bricks }}"
+    cluster: "{{ gluster_cluster_hosts }}"
+    transport: "{{ gluster_cluster_transport | default('tcp') }}"
+    replicas: "{{ gluster_cluster_replica_count | default(0) }}"
+    arbiters: "{{ gluster_cluster_arbiter_count | default(0)}}"
+    disperses: "{{ gluster_cluster_disperse_count | default(0) }}"
+    redundancies: "{{ gluster_cluster_redundancy_count | default(0) }}"
+    force: "{{ gluster_cluster_force | default('no') }}"
+    options: "{{ gluster_cluster_options | default({}) }}"
+  run_once: true
+  # rescue:
+  #   - name: Reset brick attribute
+  #     shell: vol=eth2vol; brick=/mnt/brick1; setfattr -n  trusted.glusterfs.volume-id -v 0x$(grep volume-id /var/lib/glusterd/vols/$vol/info | cut -d= -f2 | sed 's/-//g') $brick
+  #   - name: Recreate missing directories
+  #     shell: mkdir -p /mnt/brick1/.glusterfs/indices; chmod -R 700 /mnt/brick1/.glusterfs
+  #   - name: Create a volume
+  #     gluster_volume:
+  #       state: "{{ gluster_cluster_state | default('present') }}"
+  #       volume: "{{ gluster_cluster_volume }}"
+  #       bricks: "{{ gluster_cluster_bricks }}"
+  #       cluster: "{{ gluster_cluster_hosts }}"
+  #       transport: "{{ gluster_cluster_transport | default('tcp') }}"
+  #       replicas: "{{ gluster_cluster_replica_count | default(0) }}"
+  #       arbiters: "{{ gluster_cluster_arbiter_count | default(0)}}"
+  #       disperses: "{{ gluster_cluster_disperse_count | default(0) }}"
+  #       redundancies: "{{ gluster_cluster_redundancy_count | default(0) }}"
+  #       force: "yes"
+  #       options: "{{ gluster_cluster_options | default({}) }}"
+  #     run_once: true
+

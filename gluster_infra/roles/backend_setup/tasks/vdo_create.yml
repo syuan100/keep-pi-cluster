@@ -1,0 +1,87 @@
+---
+
+
+- name: Check if vdo block device exists
+  shell: test -b {{ item.device }} && echo "1" || echo  "0"
+  register: vdo_device_exists
+  with_items: "{{ gluster_infra_vdo }}"
+  when: item.device is defined
+
+
+- name: Record for missing devices for phase 2
+  set_fact:
+   gluster_phase2_has_missing_devices: true
+  loop: "{{ vdo_device_exists.results }}"
+  when: item.stdout is defined and item.stdout == "0"
+
+- name: "set fact if it will at least install 1 vdo device"
+  set_fact:
+   gluster_infra_vdo_will_create_vdo: true
+  loop: "{{ gluster_infra_vdo if gluster_infra_vdo is defined and gluster_infra_vdo is not none and gluster_infra_vdo|length>0 else [] }}"
+  loop_control:
+   index_var: index
+  when: (gluster_infra_vdo is defined and gluster_infra_vdo is not none and gluster_infra_vdo|length>0 and item is defined and item is not none)
+        and item.device is defined and vdo_device_exists.results[index].stdout is defined and vdo_device_exists.results[index].stdout == "1"
+
+- name: Install VDO dependencies
+  #maybe use package module?
+  yum:
+   name: "{{ packages }}"
+  register: vdo_deps
+  vars:
+    packages:
+      - kmod-kvdo
+      - vdo
+  when: ansible_os_family == 'RedHat' and gluster_infra_vdo_will_create_vdo is defined and gluster_infra_vdo_will_create_vdo==true
+        and (gluster_infra_installed_vdo_deps is not defined or not gluster_infra_installed_vdo_deps)
+
+- name: set fact about vdo installed deps
+  set_fact:
+    gluster_infra_installed_vdo_deps: "{{not vdo_deps.failed}}"
+  when: gluster_infra_installed_vdo_deps is not defined and vdo_deps is defined and vdo_deps.failed is defined
+
+# Start the vdo service (service can only be started after the dependencies are installed)
+- name: Enable and start vdo service
+  service:
+    name: vdo
+    state: started
+    enabled: yes
+  when: ansible_os_family != 'RedHat' or
+        (gluster_infra_vdo_will_create_vdo is defined and gluster_infra_vdo_will_create_vdo==true
+        and gluster_infra_installed_vdo_deps is defined and gluster_infra_installed_vdo_deps==true)
+
+- name: Create VDO with specified size
+  vdo:
+    name: "{{ item.name }}"
+    device: "{{ item.device }}"
+    state: "{{ item.state | default('present') }}"
+    activated: "{{ item.activated | default('yes') }}"
+    running: "{{ item.running | default('yes') }}"
+    logicalsize: "{{ item.logicalsize | default('') }}"
+    compression: "{{ item.compression | default('enabled') }}"
+    blockmapcachesize: "{{ item.blockmapcachesize | default('128M') }}"
+    emulate512: "{{ item.emulate512 | default('off') }}"
+    slabsize: "{{ item.slabsize | default('2G') }}"
+    writepolicy: "{{ item.writepolicy | default('sync') }}"
+    indexmem: "{{ item.indexmem | default('0.25') }}"
+    indexmode: "{{ item.indexmode | default('dense') }}"
+    ackthreads: "{{ item.ackthreads | default('1') }}"
+    biothreads: "{{ item.biothreads | default('4') }}"
+    cputhreads: "{{ item.cputhreads | default('2') }}"
+    logicalthreads: "{{ item.logicalthreads | default('1') }}"
+    physicalthreads: "{{ item.physicalthreads | default('1') }}"
+  with_items: "{{ gluster_infra_vdo }}"
+  loop_control:
+   index_var: index
+  #when we have a device and it exists
+  when: item.device is defined and vdo_device_exists.results[index].stdout is defined and vdo_device_exists.results[index].stdout == "1"
+
+# This is a workaround for now, as vdo ansible module has missing option for maxDiscardSize
+- name: Set VDO maxDiscardSize as 16M
+  command: "vdo modify -a --maxDiscardSize 16M"
+
+- name: Restart all VDO volumes
+  command: "vdo {{item}} -a"
+  with_items:
+  - stop
+  - start

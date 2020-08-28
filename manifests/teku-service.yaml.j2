@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: teku
+spec:
+  type: LoadBalancer
+  selector:
+    app: teku
+  ports:
+  - name: teku-api
+    port: {{ teku_api_port }}
+    targetPort: {{ teku_api_target_port }}
+    nodePort: 30031
+  - name: teku-p2p
+    port: {{ teku_port }}
+    targetPort: {{ teku_target_port }}
+    nodePort: 30032
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: teku
+  labels:
+    app: teku
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: teku
+  template:
+    metadata:
+      labels:
+        app: teku
+    spec:
+      volumes:
+        - name: eth2pv
+          persistentVolumeClaim:
+            claimName: eth2claim
+      containers:
+        - name: teku
+          image: {{ teku_image_tag }}
+          imagePullPolicy: "Always"
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+          ports:
+            - containerPort: {{ teku_api_port }}
+            - containerPort: {{ teku_port }}
+          command: ["/opt/teku/bin/teku"]
+          args: [ "--config-file=/home/teku/teku-config.yml", "--data-path", "/home/teku"{% if poap_teku is defined %}, "--validators-graffiti={{ poap_teku }}"{% endif %} ]
+          volumeMounts:
+            - mountPath: "/home"
+              name: eth2pv
+#          lifecycle:
+#            preStop:
+#              exec: 
+#                command: [ "/bin/sh","-c","rm /home/teku/archive/LOCK && rm /home/teku/db/LOCK" ]

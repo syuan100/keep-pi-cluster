@@ -1,0 +1,34 @@
+---
+- name: Ensure nobtcmd.txt exists
+  copy:
+    content: ""
+    dest: /boot/firmware/nobtcmd.txt
+    force: no
+    group: root
+    owner: root
+    mode: 0755
+  when:
+    - ansible_distribution == 'Ubuntu'
+
+- name: Enable cgroup via boot commandline if not already enabled
+  lineinfile:
+    path: /boot/firmware/nobtcmd.txt
+    backrefs: yes
+    regexp: '^((?!.*\bcgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory\b).*)$'
+    line: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
+  when:
+    - ansible_distribution == 'Ubuntu' and ansible_distribution_release != 'focal'
+
+- name: Enable cgroup via boot commandline if not already enabled (20.04)
+  lineinfile:
+    path: /boot/firmware/cmdline.txt
+    backrefs: yes
+    regexp: '^((?!.*\bcgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory\b).*)$'
+    line: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
+  when:
+    - ansible_distribution == 'Ubuntu' and ansible_distribution_release == 'focal'
+
+- name: Reboot to enable cgroups
+  reboot:
+  when:
+    - ansible_distribution == 'Ubuntu'

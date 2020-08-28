@@ -1,0 +1,93 @@
+This directory contains playbooks for various purposes
+
+1. HC Deployment
+------------------
+HC deployment playbook which is using both gluster-ansible role and ovirt-ansible-hosted-engine-setup role.
+1. Inventory file is gluster_inventory.yml has gluster related configurations template.
+   Enable "VDO config" for VDO and disable Non-VDO part.
+2. The json file he_gluster_vars.json has Hosted-Engine related configurations for gluster.
+
+Note: To deploy IPV6 based hostedengine, use the following in he_gluster_vars.json file:
+"he_mount_options": "backup-volfile-servers=host2-backend-network-FQDN:host3-backend-network-FQDN,xlator-option=transport.address-family=inet6"
+
+Replace appropriate host name with host1,host2 and host3 in inventory file and json file.
+Make sure for proper HC deployment both files ( gluster_inventory.yml and he_gluster_vars.json )
+need to be modified with accurate values like host,device,pvs,vgs,lvs,fqdn,passwords etc
+
+How to run:
+  # cd hc-ansible-deployment
+  # ansible-playbook -i gluster_inventory.yml hc_deployment.yml --extra-vars='@he_gluster_vars.json'
+
+For gluster deployment clean up:
+  # ansible-playbook -i gluster_inventory.yml tasks/gluster_cleanup.yml
+
+ovirt_repo_release_rpm value should be particular release repo if you are installing role from ansible-galaxy
+
+-> The below variables are required only when user wants to install pkgs using subscription-manager.
+"ovirt_repositories_ovirt_release_rpm": "http://resources.ovirt.org/pub/yum-repo/ovirt-master-release.rpm"
+"ovirt_repositories_use_subscription_manager": false,
+"ovirt_repositories_ovirt_version": 4.2,
+"ovirt_repositories_target_host": "host1",
+"ovirt_repositories_rh_username": "Username to use for subscription manager",
+"ovirt_repositories_rh_password": "Password to use for subscription manager",
+"ovirt_repositories_pool_ids": ["List of pools ids to subscribe to"],
+"ovirt_repositories_pools": ["List of subscription pool names"],
+"ovirt_repositories_repos_backup_path": "Directory to backup the original repositories configuration",
+"ovirt_repositories_force_register": false,
+"ovirt_repositories_rhsm_server_hostname": "Hostname of the RHSM server. By default it's used from rhsm configuration"
+ For more details please refer: https://github.com/oVirt/ovirt-ansible-repositories
+
+2. NBDE setup with Clevis/Tang
+-------------------------------
+  1. Sample inventory file is luks_tang_inventory.yml
+  2. Create a backup copy of the template inventory file
+  3. Edit the inventory file right set of values
+  4. Encrypt the inventory with ansible-vault # ansible-vault encrypt luks_tang_inventory.yml
+  5. Run the playbook to configure NBDE with LUKS device and tang server: 
+	# cd hc-ansible-playbook
+        # ansible-playbook -i luks_tang_inventory.yml tasks/luks_tang_setup.yml --tags luksencrypt,bindtang --ask-vault-pass
+  6. If blaclisting the devices is also required, include 'blacklistdevices' along with the tags
+        # ansible-playbook -i luks_tang_inventory.yml tasks/luks_tang_setup.yml --tags blacklistdevices,luksencrypt,bindtang --ask-vault-pass
+
+3. Host replacement
+--------------------
+  Create two inventory:
+    1- node_prep_inventory.yml - This inventory contains information for host preparation.
+    2- node_replace_inventory.yml - This inventory contains information about node which needs to be replaced and other hosts
+  Primarily there are two tasks:
+  1- Gluster host preparation. This task has the tag "preparehost"
+  2- Gluster Peer Membership Restoration. This task has tag "restorepeer"
+  If both operation need to be performed then run:
+  # ansible-playbook -i node_prep_inventory.yml -i node_replace_inventory.yml tasks/replace_node.yml
+  Or using tags indivisual operation can be performed like:
+  # ansible-playbook -i node_prep_inventory.yml -i node_replace_inventory.yml tasks/replace_node.yml --tags restorepeer
+  Or
+  ansible-playbook -i node_prep_inventory.yml -i node_replace_inventory.yml tasks/replace_node.yml --tags preparehost
+
+4. Gluster logical network
+---------------------------
+ 1- Add appropriate values in gluster_network_inventory.yml
+ 2- Run playbook with inventory like:
+    # ansible-playbook -i gluster_network_inventory.yml tasks/gluster_network_setup.yml
+
+5. Backup of the host configuration files
+------------------------------------------
+  Backup of the host configuration files can be done concurrently on all the HC nodes.
+  After running the backup playbook, make sure to copy the archive to safe location.
+  To backup the configuration files on HC node run the following:
+  # ansible-playbook -i archive_config_inventory.yml archive_config.yml --tasks backupfiles
+
+  Restoring the configuration should be done on specific node only. So add only one hosts
+  in the 'hosts' section of inventory. Also make sure to unarchive the backup tar file
+  previously backed up.
+  To restore the configuration files on that node, run with tag 'restorefiles'
+  # ansible-playbook -i archive_config_inventory.yml archive_config.yml --tasks restorefiles
+
+6. Reconfigure HostedEngine Storage
+------------------------------------
+  When replacing the host gluster primary volfile server with the new host, requires the
+  hostedengine storage configuration to be updated. This tasks is handled with
+  reconfigure_he_storage.yml playbook. The inventory file is reconfigure_he_storage_inventory.yml
+
+  Run the playbook after populating right set of values to reconfigure_he_storage_inventory.yml
+    # ansible-playbook -i reconfigure_he_storage_inventory.yml tasks/reconfigure_he_storage.yml

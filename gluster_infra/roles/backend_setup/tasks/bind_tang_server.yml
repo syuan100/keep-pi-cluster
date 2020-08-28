@@ -1,0 +1,87 @@
+---
+# Create key file with <device>_key and encrypt devices
+
+- name: Create key root file
+  no_log: true
+  copy:
+      dest: "/etc/root_key"
+      content: |
+        {{ rootpassphrase }}
+  when: gluster_infra_tangservers is defined
+
+- name: Download the advertisement from tang server for IPv4
+  shell:
+    cmd: curl -sfg "{{ item.url }}/adv" -o /etc/adv{{ index }}.jws
+    warn: False
+  loop: "{{ gluster_infra_tangservers }}"
+  loop_control:
+    index_var: index
+  when: "gluster_infra_tangservers is defined and ip_version == 'IPv4'"
+
+- name: Download the advertisement from tang server for IPv6
+  shell:
+    cmd: curl -6 -sfg "{{ item.url }}/adv" -o /etc/adv{{ index }}.jws
+    warn: False
+  loop: "{{ gluster_infra_tangservers }}"
+  loop_control:
+    index_var: index
+  when: "gluster_infra_tangservers is defined and ip_version == 'IPv6'"
+
+- name: Bind tang server with clevis
+  no_log: true
+  shell: clevis luks bind -f -k /etc/root_key -d  {{ rootdevice }} tang '{"url":"{{item.url}}", "adv":"/etc/adv{{ index }}.jws"}'
+  loop: "{{ gluster_infra_tangservers }}"
+  loop_control:
+    index_var: index
+  when: gluster_infra_tangservers is defined
+
+# For DHCP
+- name: Add network entry for dhcp on /etc/dracut.conf.d/clevis.conf
+  blockinfile:
+    path: /etc/dracut.conf.d/clevis.conf
+    create: yes
+    state: present
+    block: |
+      kernel_cmdline="ip={{ networkinterface }}:dhcp"
+      omit_dracutmodules+="ifcfg"
+      omit_dracutmodules+="network-legacy"
+      add_dracutmodules+="clevis network-manager"
+    marker: "# {mark} Entry for {{networkinterface}}"
+  when: "gluster_infra_tangservers is defined and ip_config_method == 'dhcp'"
+
+# For Static and IPv4
+- name: Add network entry for static and IPv4 on /etc/dracut.conf.d/clevis.conf
+  blockinfile:
+    path: /etc/dracut.conf.d/clevis.conf
+    create: yes
+    state: present
+    block: |
+      kernel_cmdline="ip={{host_ip_addr}}::{{host_net_gateway}}:{{host_ip_prefix}}::{{networkinterface}}:off"
+      omit_dracutmodules+="ifcfg"
+      omit_dracutmodules+="network-legacy"
+      add_dracutmodules+="clevis network-manager"
+    marker: "# {mark} Entry for {{networkinterface}}"
+  when: "gluster_infra_tangservers is defined and ip_config_method == 'static' and ip_version == 'IPv4'"
+
+# For Static and IPv6
+- name: Add network entry for static and IPv6 on /etc/dracut.conf.d/clevis.conf
+  blockinfile:
+    path: /etc/dracut.conf.d/clevis.conf
+    create: yes
+    state: present
+    block: |
+      kernel_cmdline="ip=[{{host_ip_addr}}]::[{{host_net_gateway}}]:{{host_ip_prefix}}::{{networkinterface}}:off"
+      omit_dracutmodules+="ifcfg"
+      omit_dracutmodules+="network-legacy"
+      add_dracutmodules+="clevis network-manager"
+    marker: "# {mark} Entry for {{networkinterface}}"
+  when: "gluster_infra_tangservers is defined and ip_config_method == 'static' and ip_version == 'IPv6'"
+
+- name: Execute dracut -vf to configure tang
+  command: dracut -vf --regenerate-all
+  when: gluster_infra_tangservers is defined
+
+- name: Remove root_key file
+  file:
+    path: /etc/root_key
+    state: absent

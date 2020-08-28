@@ -1,0 +1,88 @@
+hc_nodes:
+  hosts:
+    host1:
+      # 1. Blacklist multipath devices which are used for gluster bricks.
+      #    The disks nned not be blacklisted only when multipath configuration
+      #    exists in the server and in that case the value for 'devicename' 
+      #    should be /dev/mapper/<WWID> instead of /dev/sdx
+      # 2. On considering to blacklist the disks,include BOOT/OS disk too
+      #    In the following example, sda is the BOOT/OS disk
+      blacklist_mpath_devices:
+        - sda
+        - sdb
+        - sdc
+
+      gluster_infra_luks_devices:
+        - devicename: /dev/sdb
+          passphrase: test123
+        - devicename: /dev/sdc
+          passphrase: test1234
+
+      rootpassphrase: <rootpassphrase for host1>
+      rootdevice: <Root Device Name>
+      networkinterface: <Network interface to bind tang servers>
+      # Required below variables only if ip_config_method is static
+      host_ip_addr: <Static IP of the host>
+      host_ip_prefix: <Network prefix>
+      host_net_gateway: <Default network gateway>
+
+    host2:
+      # 1. Blacklist multipath devices which are used for gluster bricks.
+      #    The disks need not be blacklisted only when multipath configuration
+      #    exists in the server and in that case the value for 'devicename'
+      #    should be /dev/mapper/<WWID> instead of /dev/sdx
+      # 2. On considering to blacklist the disks,include BOOT/OS disk too
+      #    In the following example, sda is the BOOT/OS disk
+      blacklist_mpath_devices:
+        - sda
+        - sdb
+        - sdc
+
+      gluster_infra_luks_devices:
+        - devicename: /dev/sdb
+          passphrase: test123
+        - devicename: /dev/sdc
+          passphrase: test1234
+
+      rootpassphrase: <rootpassphrase for host2>
+      rootdevice: <Root Device Name>
+      networkinterface: <Network interface to bind tang servers>
+      # Required below variables only if ip_config_method is static
+      host_ip_addr: <Static IP of the host>
+      host_ip_prefix: <Network prefix>
+      host_net_gateway: <Default network gateway>
+
+    host3:
+      # 1. Blacklist multipath devices which are used for gluster bricks.
+      #    The disks need not be blacklisted only when multipath configuration
+      #    exists in the server and in that case the value for 'devicename'
+      #    should be /dev/mapper/<WWID> instead of /dev/sdx
+      # 2. On considering to blacklist the disks,include BOOT/OS disk too
+      #    In the following example, sda is the BOOT/OS disk
+      blacklist_mpath_devices:
+        - sda
+        - sdb
+        - sdc
+
+      gluster_infra_luks_devices:
+        - devicename: /dev/sdd
+          passphrase: test123
+        - devicename: /dev/sde
+          passphrase: test1234
+
+      rootpassphrase: <rootpassphrase for host3>
+      rootdevice: <Root Device Name>
+      networkinterface: <Network interface to bind tang servers>
+      # Required below variables only if ip_config_method is static
+      host_ip_addr: <Static IP of the host>
+      host_ip_prefix: <Network prefix>
+      host_net_gateway: <Default network gateway>
+
+  vars:
+    ip_version: <IPv4/IPv6>
+    ip_config_method: <dhcp/static>
+    # when tangd.socket is using the custom port other than 80
+    # then please specify <port>
+    gluster_infra_tangservers:
+      - url: http://<tang server ipaddress>:<port>
+      - url: http://<tang server ipaddress>:<port>

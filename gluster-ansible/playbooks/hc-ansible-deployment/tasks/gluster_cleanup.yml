@@ -1,0 +1,101 @@
+---
+- name: Remove gluster setup
+  hosts: hc_nodes
+  remote_user: root
+  gather_facts: False
+  ignore_errors: True
+  tasks:
+    - name: Delete the volumes
+      gluster_volume:
+        state: absent
+        name: "{{ item.volname }}"
+      run_once: True
+      with_items: "{{ gluster_features_hci_volumes }}"
+      when: gluster_features_hci_volumes is defined
+      tags:
+        - delete_volumes
+
+    # Remove the brick directories
+    - name: Remove brick directories
+      file:
+        state: absent
+        path: "{{ item.brick }}"
+      with_items: "{{ gluster_features_hci_volumes }}"
+      when: gluster_features_hci_volumes is defined
+
+    - name: Unmount the disks
+      mount:
+        state: absent
+        path: "{{ item.path }}"
+      with_items: "{{ gluster_infra_mount_devices }}"
+
+    - name: Wipe filesystem from LVs
+      shell: wipefs -a /dev/{{ item.vgname }}/{{ item.lvname}}
+      register: shell_output
+      changed_when: shell_output.rc == 0
+      failed_when: False
+      with_items: "{{ gluster_infra_mount_devices }}"
+
+    - name: Delete volume groups
+      lvg:
+        vg: "{{ item.vgname }}"
+        state: absent
+        force: yes
+      with_items: "{{ gluster_infra_volume_groups }}"
+      when: gluster_infra_volume_groups is defined
+
+    - name: Remove PV
+      shell: pvremove {{ item.pvname }} -ff
+      register: shell_output
+      changed_when: shell_output.rc == 0
+      with_items: "{{ gluster_infra_volume_groups }}"
+      when: gluster_infra_volume_groups is defined
+      failed_when: False
+
+    - name: Remove Cache PV
+      shell: pvremove {{ item.cachedisk }} -ff
+      register: shell_output
+      changed_when: shell_output.rc == 0
+      with_items: "{{ gluster_infra_cache_vars }}"
+      when: gluster_infra_cache_vars is defined
+      failed_when: False
+
+    # Remove vdo devices if any
+    - name: Remove VDO devices
+      vdo:
+        name: "{{ item.name }}"
+        state: absent
+      with_items: "{{ gluster_infra_vdo }}"
+      when: gluster_infra_vdo is defined
+
+    - name: Remove ansibleStatus file
+      file:
+        path: /usr/share/cockpit/ovirt-dashboard/ansible/ansibleStatus.conf
+        state: absent
+
+    - name: Get the list of hosts to be detached
+      shell: gluster pool list | egrep -vw '(localhost|Hostname)' | awk '{print $2}'
+      register: peernodes
+      run_once: true
+
+    - name: Delete a node from the trusted storage pool
+      command: gluster peer detach {{ item }} --mode=script
+      with_items: "{{ cluster_nodes }}"
+      when: item != inventory_hostname and peernodes.stdout_lines|length > 0
+      run_once: true
+
+    - name: Remove specified device from blacklist
+      blockinfile:
+        path: /etc/multipath/conf.d/blacklist.conf
+        marker: "# {mark} ANSIBLE MANAGED BLOCK {{ item }}"
+        content: ""
+      with_items: "{{ blacklist_mpath_devices }}"
+      when: blacklist_mpath_devices is defined
+
+    - name: Reload multipathd
+      shell: systemctl reload multipathd.service
+      failed_when: False
+      when: blacklist_mpath_devices is defined
+
+  tags:
+    - cleanup_bricks

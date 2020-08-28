@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prysm-beacon
+spec:
+  type: LoadBalancer
+  selector:
+    app: prysm-beacon
+  ports:
+  - name: prysm-beacon-api
+    port: {{ prysm_beacon_api_port }}
+    targetPort: {{ prysm_beacon_api_target_port }}
+    nodePort: 30051
+  - name: prysm-beacon-p2p
+    port: {{ prysm_beacon_peer_port }}
+    targetPort: {{ prysm_beacon_peer_target_port }}
+    nodePort: 30052
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: prysm-beacon-udp
+spec:
+  type: LoadBalancer
+  selector:
+    app: prysm-beacon
+  ports:
+  - name: prysm-beacon-p2p-udp
+    port: {{ prysm_beacon_peer_port_2 }}
+    targetPort: {{ prysm_beacon_peer_target_port_2 }}
+    protocol: UDP
+    nodePort: 30053
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prysm-beacon
+  labels:
+    app: prysm-beacon
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: prysm-beacon
+  template:
+    metadata:
+      labels:
+        app: prysm-beacon
+    spec:
+      volumes:	
+        - name: eth2pv	
+          persistentVolumeClaim:	
+            claimName: eth2claim
+      containers:
+        - name: prysm-beacon
+          image: {{ prysm_beacon_image_tag }}
+          imagePullPolicy: "Always"
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+          ports:
+            - containerPort: {{ prysm_beacon_api_port }}
+            - containerPort: {{ prysm_beacon_peer_port }}
+            - containerPort: {{ prysm_beacon_peer_port_2 }}
+              protocol: UDP
+          command: ["./prysm-beacon"]
+          args: [ "--datadir=/root/prysm/data", "--rpc-host=0.0.0.0", "--monitoring-host=0.0.0.0", {% if public_facing_ip is defined %}"--p2p-host-ip", "{{ public_facing_ip }}", {% endif %}"--http-web3provider", "{{ eth1_endpoint }}" ]
+          volumeMounts:	
+            - mountPath: "/root"	
+              name: eth2pv 

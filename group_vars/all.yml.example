@@ -1,0 +1,38 @@
+---
+# Deployments
+#############
+deploy_geth: false
+deploy_keep_random_beacon: true
+
+# Raspberry Pi setup
+####################
+
+ansible_user: ubuntu
+copy_local_key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+sys_packages: [ 'curl', 'vim', 'git', 'ufw', 'socat', 'jq', 'dphys-swapfile', 'golang-go', 'make' ]
+
+# Kubernetes setup
+##################
+
+k3s_version: v1.18.8+k3s1
+systemd_dir: /etc/systemd/system
+master_ip: "{{ hostvars[groups['master'][0]]['ansible_host'] | default(groups['master'][0]) }}"
+extra_k3s_server_args: "--no-deploy servicelb"
+
+# Replicated storage
+####################
+storage_solution: glusterfs # DO NOT CHANGE. May add other solutions in the future.
+storage_path: /dev/sda1
+storage_size: 50 # Please put a value in GB equal to or less than the amount of storage available on your device
+
+# Docker images
+###############
+keep_random_beacon_tag: syuan100/go-ethereum:v1.9.19_arm64
+
+# Default endpoint: References geth instance in kubernetes cluster
+# external_eth1: false
+# eth1_endpoint: "http://geth.default.svc.cluster.local:{{ geth_json_rpc_port}}"
+
+# External endpoint: References geth instance in another service (such as Prysm or Infura). Uncomment the lines below to enable.
+external_eth1: true
+eth1_endpoint: https://goerli.infura.io/v3/f96a3f23fd3843aab14a9b48e0964008

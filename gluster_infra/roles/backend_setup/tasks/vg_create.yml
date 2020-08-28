@@ -1,0 +1,74 @@
+---
+# We have to set the dataalignment for physical volumes, and physicalextentsize
+# for volume groups. For JBODs we use a constant alignment value of 256K
+# however, for RAID we calculate it by multiplying the RAID stripe unit size
+# with the number of data disks. Hence in case of RAID stripe_unit_size and data
+# disks are mandatory parameters.
+
+- name: Check if valid disktype is provided
+  fail:
+    msg: "Unknown disktype. Allowed disktypes: JBOD, RAID6, RAID10, RAID5."
+  when: gluster_infra_disktype not in [ 'JBOD', 'RAID6', 'RAID10', 'RAID5' ]
+
+
+# Set data alignment for JBODs, by default it is 256K. This set_fact is not
+# needed if we can always assume 256K for JBOD, however we provide this extra
+# variable to override it.
+- name: Set PV data alignment for JBOD
+  set_fact:
+    pv_dataalign: "{{ gluster_infra_dalign | default('256K') }}"
+  when: gluster_infra_disktype == 'JBOD'
+
+# Set data alignment for RAID
+# We need KiB: ensure to keep the trailing `K' in the pv_dataalign calculation.
+- name: Set PV data alignment for RAID
+  set_fact:
+    pv_dataalign: >
+        {{ gluster_infra_diskcount|int *
+           gluster_infra_stripe_unit_size|int }}K
+  when: >
+      gluster_infra_disktype == 'RAID6' or
+      gluster_infra_disktype == 'RAID10' or
+      gluster_infra_disktype == 'RAID5'
+
+- name: Set VG physical extent size for RAID
+  set_fact:
+    vg_pesize: >
+         {{ gluster_infra_diskcount|int *
+            gluster_infra_stripe_unit_size|int }}K
+  when: >
+     gluster_infra_disktype == 'RAID6' or
+     gluster_infra_disktype == 'RAID10' or
+     gluster_infra_disktype == 'RAID5'
+
+- include_tasks: get_vg_groupings.yml
+  vars: 
+   volume_groups: "{{ gluster_infra_volume_groups }}"
+  when: gluster_infra_volume_groups is defined and gluster_infra_volume_groups is not none and gluster_infra_volume_groups|length >0 
+
+- name: Record for missing devices for phase 2
+  set_fact:
+   gluster_phase2_has_missing_devices: true
+  loop: "{{ vg_device_exists.results }}"
+  when: item.stdout_lines is defined and "0" in item.stdout_lines
+
+# Tasks to create a volume group
+# The devices in `pvs' can be a regular device or a VDO device
+# Please take note; only the first item per volume group will define the actual configuraton!
+#TODO: fix pesize // {{ ((item.value | first).vg_pesize || vg_pesize) | default(4) }}
+- name: Create volume groups
+  register: gluster_changed_vgs
+  lvg:
+    state: present
+    vg: "{{ (item.value | first).vgname }}"
+    pvs: "{{ item.value | json_query('[].pvname') | unique | join(',') }}"
+    pv_options: "--dataalignment {{ item.value.pv_dataalign | default(pv_dataalign) }}"
+    # pesize is 4m by default for JBODs
+    pesize: "{{ vg_pesize | default(4) }}"
+  loop: "{{gluster_volumes_by_groupname | default({}) | dict2items}}"
+  when: gluster_volumes_by_groupname is defined and item.value|length>0
+  
+- name: update LVM fact's
+  setup: 
+   filter: 'ansible_lvm'
+  when: gluster_changed_vgs.changed 

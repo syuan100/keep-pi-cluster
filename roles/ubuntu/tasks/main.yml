@@ -1,0 +1,43 @@
+- name: Update hostnames
+  hostname:
+    name: "rpi-{{ '%02d' | format(groups['all'].index(inventory_hostname)+1|int)}}"
+
+- name: Disable password authentication for root
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin no'
+
+- name: Disable ChallengeResponseAuthentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^#?ChallengeResponseAuthentication'
+    line: 'ChallengeResponseAuthentication no'
+
+- name: Disable Password Auth in general
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+
+- name: Disable PAM
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^#?UsePAM'
+    line: 'UsePAM no'
+
+# Install Packages
+
+- name: Add repo for go
+  apt_repository:
+    repo: ppa:longsleep/golang-backports
+
+- name: Update apt
+  apt: name=aptitude update_cache=yes state=latest force_apt_get=yes
+
+- name: Install required system packages
+  apt: name={{ sys_packages }} state=latest

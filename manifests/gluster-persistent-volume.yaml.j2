@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: eth2pv
+spec:
+  storageClassName: local-storage
+  capacity:
+    storage: {{ storage_size }}Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    path: /mnt/eth2
+  persistentVolumeReclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: eth2claim
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ storage_size }}Gi

@@ -1,0 +1,191 @@
+- name: Host setup
+  hosts: k3s_cluster
+  become: yes
+  gather_facts: yes
+  any_errors_fatal: true
+  roles:
+    - role: ubuntu
+
+- name: Disable updates temporarily
+  hosts: k3s_cluster
+  become: yes
+  any_errors_fatal: true
+  tasks:
+    - shell: systemctl disable apt-daily.service && \
+             systemctl disable apt-daily.timer && \
+             systemctl disable apt-daily-upgrade.timer && \
+             systemctl disable apt-daily-upgrade.service
+
+- name: Setup K3s...
+  hosts: k3s_cluster
+  any_errors_fatal: true
+  gather_facts: yes
+  become: yes
+  roles:
+    - role: kubernetes/prereq
+    - role: kubernetes/download
+    - role: kubernetes/raspbian
+    - role: kubernetes/ubuntu
+  tasks:
+    - name: Pause to wait for SSH to come back online...
+      pause:
+        minutes: 5
+
+- name: Copy kubelet config files
+  hosts: k3s_cluster
+  any_errors_fatal: true
+  become: yes
+  tasks:
+    - name: Copy geth service config file
+      copy:
+        src: ./manifests/kubelet-config.yaml
+        dest: /home/ubuntu/kubelet-config.yaml
+      register: result
+
+- name: Setup kubernetes master node...
+  hosts: master
+  any_errors_fatal: true
+  become: yes
+  roles:
+    - role: kubernetes/k3s/master
+
+- name: Setup kubernetes worker nodes...
+  hosts: nodes
+  any_errors_fatal: true
+  become: yes
+  roles:
+    - role: kubernetes/k3s/node
+
+- name: Prep storage for glusterfs...
+  hosts: gluster_servers
+  become: yes
+  any_errors_fatal: true
+  tasks:
+    - name: Try formatting
+      block:
+        - name: Format storage
+          filesystem:
+            fstype: xfs
+            force: yes
+            dev: '{{ storage_path }}'
+      rescue:
+        - name: Remove volume from system manually
+          shell: lvremove -y vg_eth && vgremove vg_eth
+        - name: Format storage
+          filesystem:
+            fstype: xfs
+            force: yes
+            dev: '{{ storage_path }}'
+
+- name: Setting up glusterfs bricks...
+  any_errors_fatal: true
+  become: yes
+  hosts: gluster_servers
+  gather_facts: false
+  vars:
+    # Set a disk type, Options: JBOD, RAID6, RAID10
+    gluster_infra_disktype: JBOD
+
+    # Stripe unit size always in KiB
+    gluster_infra_stripe_unit_size: 128
+
+    # enable lvm auto-extend feature so that when the pool is at 70% it will be extended with 15%
+    gluster_infra_lvm: {
+    autoexpand_threshold: 70,
+    autoexpand_percentage: 15,
+    }
+  
+    # enable fstrim service so the TRIM command is executed once in a while to clean either ssd or thin/vdo volumes
+    fstrim_service: {
+      enabled: yes,
+      schedule: {         
+        hour: "{{ range(1, 4) | random() }}"
+      }
+    }
+
+    # Variables for creating volume group
+    gluster_infra_volume_groups:
+      - { vgname: 'vg_eth', pvname: '{{ storage_path }}' }
+
+    # Create thinpools
+    gluster_infra_thinpools:
+      - {vgname: 'vg_eth', thinpoolname: 'eth2_thinpool', thinpoolsize: '{{ storage_size }}G', poolmetadatasize: '100M'}
+
+    # Create a thin volume
+    gluster_infra_lv_logicalvols:
+      - { vgname: 'vg_eth', thinpool: 'eth2_thinpool', lvname: 'vg_eth_thin_eth2', lvsize: '{{ storage_size * ( groups["all"] | length ) }}G'}
+
+    # Mount the devices 
+    gluster_infra_mount_devices:
+      - { path: '/mnt/brick1', vgname: 'vg_eth', lvname: 'vg_eth_thin_eth2' }
+
+  roles:
+    - '../gluster_infra/roles/backend_setup'
+
+- name: Create glusterfs cluster...
+  any_errors_fatal: true
+  hosts: gluster_servers
+  become: yes
+  gather_facts: true
+
+  vars:
+    # gluster volume
+    gluster_cluster_hosts: "{{ groups['gluster_servers'] }}"
+    gluster_cluster_volume: eth2vol
+    gluster_cluster_transport: 'tcp'
+    gluster_cluster_bricks: '/mnt/brick1'
+
+    # match number of replicas to total number of gluster_servers
+    gluster_cluster_replica_count: '{{ groups["gluster_servers"] | length }}'
+
+    # variables to set specific volume options
+    gluster_cluster_options: {'performance.cache-size':'64MB'}
+  roles:
+    - '../gluster_cluster/roles/gluster_volume'
+  tasks:
+    - name: Ensure GlusterFS server is installed on all hosts
+      apt:
+        name: glusterfs-server
+    - name: Mount gluster volume locally for all hosts
+      mount:
+        path: /mnt/eth2
+        src: localhost:/eth2vol
+        fstype: glusterfs
+        opts: defaults,_netdev
+        state: mounted
+
+- name: Copy service configurations & deploy
+  hosts: master
+  any_errors_fatal: true
+  become: true
+  roles:
+    - role: services/metallb
+    - { role: services/glusterfs, when: storage_solution == "glusterfs" }
+    - { role: services/geth, when: external_eth1 != true or standalone_geth == true }
+    - { role: services/lighthouse-beacon, when: deploy_lighthouse_beacon == true }
+    - { role: services/lighthouse-validator, when: deploy_lighthouse_validator == true }
+    - { role: services/teku, when: deploy_teku_beacon_w_validator == true }
+    - { role: services/nimbus, when: deploy_nimbus == true }
+    - { role: services/prysm-beacon, when: deploy_prysm_beacon == true }
+    - { role: services/prysm-validator, when: deploy_prysm_validator == true }
+  tasks:
+    - name: Restart k3s
+      systemd:
+        state: restarted
+        name: k3s
+
+- name: Re-enable updates
+  hosts: k3s_cluster
+  become: yes
+  any_errors_fatal: true
+  tasks:
+    - shell: systemctl enable apt-daily.service && \
+             systemctl enable apt-daily.timer && \
+             systemctl enable apt-daily-upgrade.timer && \
+             systemctl enable apt-daily-upgrade.service
+             
+# - name: Install Prometheus and Grafana
+#   hosts: master 
+#   become: yes
+#   roles:
+#     - role: kubernetes/monitoring

@@ -1,0 +1,13 @@
+- name: Delete geth service config file
+  file:
+    path: /var/lib/rancher/k3s/server/manifests/geth-service.yaml
+    state: absent
+  when: external_eth1 == true and standalone_geth != true
+  retries: 3
+  delay: 5
+
+- name: Delete geth deployment
+  shell: kubectl delete deployment --selector=app=geth
+  when: external_eth1 == true and standalone_geth != true
+  retries: 3
+  delay: 5
