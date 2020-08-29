@@ -1,2 +1,4 @@
 hosts.ini
 group_vars/all.yml
+keystore_file/*
+!keystore_file/readme.md
