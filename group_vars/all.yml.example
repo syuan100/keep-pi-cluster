@@ -24,7 +24,7 @@ extra_k3s_server_args: "--no-deploy servicelb"
 ####################
 storage_solution: glusterfs # DO NOT CHANGE. May add other solutions in the future.
 storage_path: /dev/sda1
-storage_size: 50 # Please put a value in GB equal to or less than the amount of storage available on your device
+storage_size: 30 # Please put a value in GB equal to or less than the amount of storage available on your device
 
 # Docker images
 ###############
