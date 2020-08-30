@@ -5,10 +5,5 @@
   roles:
     - role: services/metallb
     - { role: services/glusterfs, when: storage_solution == "glusterfs" }
-    - { role: services/geth, when: external_eth1 != true or standalone_geth == true }
-    - { role: services/lighthouse-beacon, when: deploy_lighthouse_beacon == true }
-    - { role: services/lighthouse-validator, when: deploy_lighthouse_validator == true }
-    - { role: services/teku, when: deploy_teku_beacon_w_validator == true }
-    - { role: services/nimbus, when: deploy_nimbus == true }
-    - { role: services/prysm-beacon, when: deploy_prysm_beacon == true }
-    - { role: services/prysm-validator, when: deploy_prysm_validator == true }
+    - { role: services/keep-random-beacon, when: deploy_keep_random_beacon == true}
+    - { role: services/keep-ecdsa, when: deploy_keep_ecdsa == true}

@@ -1,12 +1,12 @@
 # Ethereum host connection info.
 [ethereum]
-  URL = "{{ ethereum_host_url }}"
+  URL = "{{ ethereum_url }}"
   URLRPC = "{{ eth1_endpoint }}"
 
 # Keep operator Ethereum account.
 [ethereum.account]
-  Address = "{{ account_address }}"
-  KeyFile = "{{ account_keystore }}"
+  Address = "{{ beacon_account_address }}"
+  KeyFile = "{{ beacon_account_keystore }}"
 
 # Keep contract addresses configuration.
 [ethereum.ContractAddresses]
@@ -21,11 +21,11 @@
 
 # Keep network configuration.
 [LibP2P]
-  Peers = [{{ bootstrap_peers }}]
-  Port  = {{ p2p_port }}
+  Peers = [{{ beacon_bootstrap_peers }}]
+  Port  = {{ beacon_p2p_port }}
   # Override the node's default addresses announced in the network
-  # AnnouncedAddresses = [{{ announced_addresses }}]
+  AnnouncedAddresses = [{{ beacon_announced_addresses }}]
 
 # Storage is encrypted
 [Storage]
-  DataDir = "{{ data_dir }}"
+  DataDir = "/mnt/keep-client"

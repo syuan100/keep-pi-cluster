@@ -1,0 +1,40 @@
+- name: Make config dir
+  file: 
+    path: /mnt/eth2/keep-client/config
+    state: directory
+
+- name: Make keystore dir
+  file: 
+    path: /mnt/eth2/keep-client/keystore
+    state: directory
+
+- name: Copy config
+  template:
+    src: ../../../../manifests/keep-beacon-config.toml.j2
+    dest: /mnt/eth2/keep-client/config/keep-beacon-config.toml
+    owner: root
+    group: root
+    mode: preserve
+  register: result
+
+- name: Copy keystore
+  copy:
+    src: "../../../../keystore/{{ beacon_keystore_filename }}"
+    dest: /mnt/eth2/keep-client/keystore/{{ beacon_keystore_filename }}
+    owner: root
+    group: root
+    mode: preserve
+  register: result
+
+- name: Copy service file
+  template:
+    src: ../../../../manifests/keep-core-service.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/keep-core-service.yaml
+    owner: root
+    group: root
+    mode: preserve
+  register: result
+
+- name: Apply new service config if changed
+  shell: kubectl apply -f /var/lib/rancher/k3s/server/manifests/keep-core-service.yaml
+  when: result.changed == true

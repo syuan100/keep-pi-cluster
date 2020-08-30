@@ -1,0 +1,40 @@
+- name: Make config dir
+  file: 
+    path: /mnt/eth2/keep-ecdsa/config
+    state: directory
+
+- name: Make keystore dir
+  file: 
+    path: /mnt/eth2/keep-ecdsa/keystore
+    state: directory
+
+- name: Copy config
+  template:
+    src: ../../../../manifests/keep-ecdsa-config.toml.j2
+    dest: /mnt/eth2/keep-ecdsa/config/keep-ecdsa-config.toml
+    owner: root
+    group: root
+    mode: preserve
+  register: result
+
+- name: Copy keystore
+  copy:
+    src: "../../../../keystore/{{ ecdsa_keystore_filename }}"
+    dest: /mnt/eth2/keep-ecdsa/keystore/{{ ecdsa_keystore_filename }}
+    owner: root
+    group: root
+    mode: preserve
+  register: result
+
+- name: Copy service file
+  template:
+    src: ../../../../manifests/keep-ecdsa-service.yaml.j2
+    dest: /var/lib/rancher/k3s/server/manifests/keep-ecdsa-service.yaml
+    owner: root
+    group: root
+    mode: preserve
+  register: result
+
+- name: Apply new service config if changed
+  shell: kubectl apply -f /var/lib/rancher/k3s/server/manifests/keep-ecdsa-service.yaml
+  when: result.changed == true
