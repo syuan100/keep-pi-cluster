@@ -11,3 +11,13 @@
   when: external_eth1 == true and standalone_geth != true
   retries: 3
   delay: 5
+
+- name: Delete keep random beacon
+  shell: kubectl delete deployment --selector=app=keep-random-beacon
+  retries: 3
+  delay: 5
+
+- name: Delete keep ecdsa
+  shell: kubectl delete deployment --selector=app=keep-ecdsa
+  retries: 3
+  delay: 5
