@@ -51,6 +51,8 @@ spec:
               value: "/mnt/keep-client/config"
             - name: KEEP_CLIENT_PERSISTENCE_DIR
               value: "/mnt/keep-client"
+            - name: LOG_LEVEL
+              value: {{ beacon_debug_level }}
           ports:
             - containerPort: {{ beacon_p2p_port }}
           command: ["/usr/local/bin/keep-client"]

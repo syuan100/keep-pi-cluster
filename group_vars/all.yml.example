@@ -3,6 +3,7 @@
 #############
 deploy_geth: false
 deploy_keep_random_beacon: true
+deploy_keep_ecdsa: true
 
 # Raspberry Pi setup
 ####################
@@ -27,7 +28,8 @@ storage_size: 50 # Please put a value in GB equal to or less than the amount of 
 
 # Docker images
 ###############
-keep_random_beacon_tag: syuan100/go-ethereum:v1.9.19_arm64
+keep_random_beacon_tag: syuan100/keep-core:v1.3.0-rc_arm64
+keep_ecdsa_tag: syuan100/keep-ecdsa:v1.1.1-rc_arm64
 
 # Default endpoint: References geth instance in kubernetes cluster
 # external_eth1: false
@@ -35,4 +37,57 @@ keep_random_beacon_tag: syuan100/go-ethereum:v1.9.19_arm64
 
 # External endpoint: References geth instance in another service (such as Prysm or Infura). Uncomment the lines below to enable.
 external_eth1: true
-eth1_endpoint: https://ropsten.infura.io/v3/129d479c71bb4f068db316f322edbbbf
+eth1_endpoint: https://ropsten.infura.io/v3/XXXXXXXXXXXXXXXXXXXXXXXX
+
+# Keep General Variables
+container_mount_point: /mnt
+ethereum_url: wss://ropsten.infura.io/ws/v3/XXXXXXXXXXXXXXXXXXXXXXXX
+
+# Keep Beacon Variables
+beacon_account_address: "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+beacon_keystore_filename: UTC--2020-08-29T17-45-22.740497000Z--AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+beacon_account_keystore: /mnt/keep-client/keystore/{{ beacon_keystore_filename }}
+beacon_account_password: yourpasswordhere
+beacon_p2p_port: 3919
+beacon_announced_addresses: '"/ip4/xxx.xxx.xxx/tcp/3919"'
+beacon_debug_level: "debug"
+
+# Keep ECSDA Variables
+ecdsa_account_address: "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+ecdsa_keystore_filename: UTC--2020-08-29T17-45-22.740497000Z--AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ecdsa_account_keystore: /mnt/keep-ecdsa/keystore/{{ beacon_keystore_filename }}
+ecdsa_account_password: yourpasswordhere
+ecdsa_p2p_port: 3920
+ecdsa_announced_addresses: '"/ip4/xxx.xxx.xxx/tcp/3920"'
+ecdsa_debug_level: "debug"
+
+### TESTNET VALUES
+keep_random_beacon_operator_contract: "0xf417b31104631280adF9F6828ee19985BC299fdC"
+keep_token_staking_contract: "0x8117632eC1D514550b3880Bc68F9AC1A76c9C67B"
+keep_random_beacon_service_contract: "0xd83248e311DC2Ba0d2A051e86f0678d8857f6ADD"
+beacon_bootstrap_peers: '"/dns4/bootstrap-1.core.keep.test.boar.network/tcp/3001/ipfs/16Uiu2HAkuTUKNh6HkfvWBEkftZbqZHPHi3Kak5ZUygAxvsdQ2UgG",
+"/dns4/bootstrap-2.core.keep.test.boar.network/tcp/3001/ipfs/16Uiu2HAmQirGruZBvtbLHr5SDebsYGcq6Djw7ijF3gnkqsdQs3wK",
+"/dns4/bootstrap-3.test.keep.network/tcp/3919/ipfs/16Uiu2HAm8KJX32kr3eYUhDuzwTucSfAfspnjnXNf9veVhB12t6Vf",
+"/dns4/bootstrap-2.test.keep.network/tcp/3919/ipfs/16Uiu2HAmNNuCp45z5bgB8KiTHv1vHTNAVbBgxxtTFGAndageo9Dp"'
+
+ecdsa_contract_address: "0xb37c8696cD023c11357B37b5b12A9884c9C83784"
+ecdsa_sanctioned_applications: '"0x9F3B3bCED0AFfe862D436CB8FF462a454040Af80"'
+ecdsa_bootstrap_peers: '"/dns4/bootstrap-1.ecdsa.keep.test.boar.network/tcp/4001/ipfs/16Uiu2HAmPFXDaeGWtnzd8s39NsaQguoWtKi77834A6xwYqeicq6N",
+"/dns4/ecdsa-2.test.keep.network/tcp/3919/ipfs/16Uiu2HAmNNuCp45z5bgB8KiTHv1vHTNAVbBgxxtTFGAndageo9Dp",
+"/dns4/ecdsa-3.test.keep.network/tcp/3919/ipfs/16Uiu2HAm8KJX32kr3eYUhDuzwTucSfAfspnjnXNf9veVhB12t6Vf"'
+
+### MAINNET VALUES
+# keep_random_beacon_operator_contract: 0x70F2202D85a4F0Cad36e978976f84E982920A624
+# keep_token_staking_contract: 0x6D1140a8c8e6Fac242652F0a5A8171b898c67600
+# keep_random_beacon_service_contract: 0x17056632d8db5a5c42fdE25132C59DD975a6da7F
+# beacon_bootstrap_ppers: '"/ip4/54.39.179.73/tcp/3919/ipfs/16Uiu2HAkyYtzNoWuF3ULaA7RMfVAxvfQQ9YRvRT3TK4tXmuZtaWi",
+# "/ip4/54.39.186.166/tcp/3919/ipfs/16Uiu2HAkzD5n4mtTSddzqVY3wPJZmtvWjARTSpr4JbDX9n9PDJRh",
+# "/ip4/54.39.179.134/tcp/3919/ipfs/16Uiu2HAkuxCuWA4zXnsj9R6A3b3a1TKUjQvBpAEaJ98KGdGue67p",
+# "/dns4/bst-a01.core.keep.boar.network/tcp/3001/ipfs/16Uiu2HAkzYFHsqbwt64ZztWWK1hyeLntRNqWMYFiZjaKu1PZgikN",
+# "/dns4/bst-b01.core.keep.boar.network/tcp/3001/ipfs/16Uiu2HAkxLttmh3G8LYzAy1V1g1b3kdukzYskjpvv5DihY4wvx7D",
+# "/dns4/keep-boot-validator-0.prod-us-west-2.staked.cloud/tcp/3919/ipfs/16Uiu2HAmDnq9qZJH9zJJ3TR4pX1BkYHWtR2rVww24ttxQTiKhsaJ",
+# "/dns4/keep-boot-validator-1.prod-us-west-2.staked.cloud/tcp/3919/ipfs/16Uiu2HAmHbbMTDDsT2f6z8zMgDtJkTUDJQSYsQYUpaJjdMjiYNEf",
+# "/dns4/keep-boot-validator-2.prod-us-west-2.staked.cloud/tcp/3919/ipfs/16Uiu2HAmBXoNLLMYU9EcKYH6JN5tA498sXQHFWk4heK22RfXD7wC",
+# "/dns4/4d00662f-e56d-404a-803a-cac01ada3e15.keep.bison.run/tcp/3919/ipfs/16Uiu2HAmV3HqJjcbKMxHnDxDx4m2iEYynyYdsvU3VwaeE6Zra2P9",
+# "/dns4/ec1eb390-124c-4b1b-bcf7-c21709baf2b2.keep.herd.run/tcp/3919/ipfs/16Uiu2HAmVo51PqEZLADehZEbZnrp5A7qjRWFLj9E7DfwZKVhERFt",
+# "/dns4/2aa9b786-7360-4c22-ae73-bd95af9c11c5.keep.bison.run/tcp/3919/ipfs/16Uiu2HAm9g3QrQzSvJ8FAhgB1PmjMNgjPd3pDaJJqsdSisGsnaFe"'

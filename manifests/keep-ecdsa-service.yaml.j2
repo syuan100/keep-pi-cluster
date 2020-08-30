@@ -51,6 +51,8 @@ spec:
               value: "/mnt/keep-ecdsa/config"
             - name: KEEP_CLIENT_PERSISTENCE_DIR
               value: "/mnt/keep-ecdsa"
+            - name: LOG_LEVEL
+              value: {{ ecdsa_debug_level }}
           ports:
             - containerPort: {{ ecdsa_p2p_port }}
           command: ["/usr/local/bin/keep-ecdsa"]
