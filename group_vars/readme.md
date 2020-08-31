@@ -6,10 +6,10 @@
 
 | Variable | Type | Definition |
 |--|--|--|
-| `deploy_geth` | `boolean` (`true`/`false`) | Deploy a local geth instance (default: false) |
-| `deploy_keep_random_beacon` | `boolean` (`true`/`false`) | Deploy a KEEP random beacon staking node (default: true) |
-| `deploy_keep_ecdsa` | `boolean` (`true`/`false`) | Deploy a KEEP ECDSA staking node (default: true) |
-| `external_eth1` | `boolean` (`true`/`false`) | Set to true if you are using an external Ethereum endpoint like Infura |
+| `deploy_geth` | `boolean` | Deploy a local geth instance (default: false) |
+| `deploy_keep_random_beacon` | `boolean` | Deploy a KEEP random beacon staking node (default: true) |
+| `deploy_keep_ecdsa` | `boolean` | Deploy a KEEP ECDSA staking node (default: true) |
+| `external_eth1` | `boolean` | Set to true if you are using an external Ethereum endpoint like Infura |
 | `eth1_endpoint` | `string` | URL for Ethereum RPC endpoint |
  
 #### Raspberry Pi Setup
