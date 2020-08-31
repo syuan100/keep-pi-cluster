@@ -78,4 +78,25 @@
 | `ecdsa_announced_addresses` | `string` | Comma separated list of announced p2p adddresses for your node (ECDSA) |
 | `ecdsa_debug_level` | `string` | Log level for ECDSA node |
 
+#### Keep Testnet (Ropsten) Contract Values
 
+*NOTE: Contract values may change over time. Check this [keeptools.org](https://keeptools.org/address-list) page for the latest deployed contracts.*
+
+| Variable | Type | Definition |
+|--|--|--|
+| `keep_random_beacon_operator_contract` | `string` | Random beacon Ropsten contract address  |
+| `keep_token_staking_contract` | `string` | Token staking Ropsten contract address |
+| `keep_random_beacon_service_contract` | `string` | Random beacon service Ropsten contract address |
+| `beacon_bootstrap_peers` | `string` | Comma separated list of bootstrap peers for random beacon on Ropsten |
+| `ecdsa_contract_address` | `string` | ECDSA Ropsten Contract Address |
+| `ecdsa_sanctioned_applications` | `string` | Comma separated list of sanctioned applications for ECDSA on Ropsten (currently only TBTC) |
+| `ecdsa_bootstrap_peers` | `string` | Comma separated list of bootstrap peers for ECDSA on Ropsten |
+| `beacon_announced_addresses` | `string` | Comma separated list of announced p2p adddresses for your node |
+| `beacon_debug_level` | `string` | Log level for beacon node |
+| `ecdsa_account_address` | `string` | Ethereum address for your account that is authorized for ECDSA staking |
+| `ecdsa_keystore_filename` | `string` | Exact filename of ethereum account keystore file (ECDSA) |
+| `ecdsa_account_keystore` | `string` | Full path to keystore file on Kubernetes master (ECDSA) |
+| `ecdsa_account_password` | `string` | Ethereum account password (ECDSA) |
+| `ecdsa_p2p_port` | `int` | Main ECDSA p2p port (defaults to 3920) |
+| `ecdsa_announced_addresses` | `string` | Comma separated list of announced p2p adddresses for your node (ECDSA) |
+| `ecdsa_debug_level` | `string` | Log level for ECDSA node |
