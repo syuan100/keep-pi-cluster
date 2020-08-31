@@ -1,5 +1,3 @@
-(not up to date)
-
 #### Deployment variables
 
 *NOTE: It is recommended to only deploy geth on Pis with 4GB of RAM or more*
