@@ -39,16 +39,16 @@
 
 #### Docker images
 
+*NOTE: Images must be built for arm64 architectures in order to deploy correctly*
+
 | Variable | Type | Definition |
 |--|--|--|
 | `keep_random_beacon_tag` | `string` | Valid container tag/path for KEEP random beacon node |
 | `keep_ecdsa_tag` | `string` | Valid container tag/path for KEEP ECDSA node |
 
-*NOTE: Images must be built for arm64 architectures in order to deploy correctly*
-
 #### Geth variables
 
-*NOTE: It is recommended to only deploy geth locally on Pis with 4GB of RAM or more
+*NOTE: It is recommended to only deploy geth locally on Pis with 4GB of RAM or more*
 
 | Variable | Type | Definition |
 |--|--|--|
@@ -58,6 +58,9 @@
 | `geth_port_target` | `int` | Main geth service port (defaults to 30303) |
 
 #### Keep variables
+
+| Variable | Type | Definition |
+|--|--|--|
 | `container_mount_point` | `string` | Internal container mount point for Docker images (default: /mnt)  |
 | `ethereum_url` | `string` | wss:// endpoint for Ethereum endpoint |
 | `beacon_account_address` | `string` | Ethereum address for your account that is authorized for random beacon staking |
