@@ -1,0 +1,2 @@
+- name: Install netdata (one-line install method)
+  shell: /bin/bash -c "bash <(curl -Ss https://my-netdata.io/kickstart.sh) --dont-wait"
