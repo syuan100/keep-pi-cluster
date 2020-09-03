@@ -60,3 +60,11 @@ spec:
           volumeMounts:	
             - mountPath: "{{ container_mount_point }}"	
               name: eth2pv
+      tolerations:
+        - key: node.kubernetes.io/not-ready
+          effect: NoExecute
+          tolerationSeconds: 20
+        - key: node.kubernetes.io/unreachable
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 20

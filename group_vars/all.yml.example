@@ -70,16 +70,16 @@ ecdsa_announced_addresses: '"/ip4/xxx.xxx.xxx/tcp/3920"'
 ecdsa_debug_level: "debug"
 
 ### TESTNET VALUES
-keep_random_beacon_operator_contract: "0xf417b31104631280adF9F6828ee19985BC299fdC"
-keep_token_staking_contract: "0x8117632eC1D514550b3880Bc68F9AC1A76c9C67B"
-keep_random_beacon_service_contract: "0xd83248e311DC2Ba0d2A051e86f0678d8857f6ADD"
+keep_random_beacon_operator_contract: "0xC8337a94a50d16191513dEF4D1e61A6886BF410f"
+keep_token_staking_contract: "0x234d2182B29c6a64ce3ab6940037b5C8FdAB608e"
+keep_random_beacon_service_contract: "0x6c04499B595efdc28CdbEd3f9ed2E83d7dCCC717"
 beacon_bootstrap_peers: '"/dns4/bootstrap-1.core.keep.test.boar.network/tcp/3001/ipfs/16Uiu2HAkuTUKNh6HkfvWBEkftZbqZHPHi3Kak5ZUygAxvsdQ2UgG",
 "/dns4/bootstrap-2.core.keep.test.boar.network/tcp/3001/ipfs/16Uiu2HAmQirGruZBvtbLHr5SDebsYGcq6Djw7ijF3gnkqsdQs3wK",
 "/dns4/bootstrap-3.test.keep.network/tcp/3919/ipfs/16Uiu2HAm8KJX32kr3eYUhDuzwTucSfAfspnjnXNf9veVhB12t6Vf",
 "/dns4/bootstrap-2.test.keep.network/tcp/3919/ipfs/16Uiu2HAmNNuCp45z5bgB8KiTHv1vHTNAVbBgxxtTFGAndageo9Dp"'
 
-ecdsa_contract_address: "0xb37c8696cD023c11357B37b5b12A9884c9C83784"
-ecdsa_sanctioned_applications: '"0x9F3B3bCED0AFfe862D436CB8FF462a454040Af80"'
+ecdsa_contract_address: "0x9EcCf03dFBDa6A5E50d7aBA14e0c60c2F6c575E6"
+ecdsa_sanctioned_applications: '"0xc3f96306eDabACEa249D2D22Ec65697f38c6Da69"'
 ecdsa_bootstrap_peers: '"/dns4/bootstrap-1.ecdsa.keep.test.boar.network/tcp/4001/ipfs/16Uiu2HAmPFXDaeGWtnzd8s39NsaQguoWtKi77834A6xwYqeicq6N",
 "/dns4/ecdsa-2.test.keep.network/tcp/3919/ipfs/16Uiu2HAmNNuCp45z5bgB8KiTHv1vHTNAVbBgxxtTFGAndageo9Dp",
 "/dns4/ecdsa-3.test.keep.network/tcp/3919/ipfs/16Uiu2HAm8KJX32kr3eYUhDuzwTucSfAfspnjnXNf9veVhB12t6Vf"'

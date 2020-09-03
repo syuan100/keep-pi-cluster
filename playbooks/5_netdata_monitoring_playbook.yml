@@ -2,4 +2,4 @@
   hosts: k3s_cluster
   any_errors_fatal: true
   roles:
-    - { role: netdata, when: deploy_netdata_monitoring == true }
+    - { role: netdata, when: deploy_netdata == true }
